@@ -1,0 +1,10 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+db.sqlite3
+staticfiles/
+data.json
+export_sqlite.py
+fashion99/settings_sqlite.py
+db_backup.sqlite3

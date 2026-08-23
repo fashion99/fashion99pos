@@ -1,0 +1,60 @@
+{% extends 'posapp/base.html' %}
+
+{% block title %}Returns Notifications - Fashion 99 POS{% endblock %}
+
+{% block content %}
+<div class="hero-card">
+    <h2>Returns Notifications</h2>
+    <p>Manage all product returns and refunds.</p>
+</div>
+
+<div class="panel-card">
+    <div class="panel-header">
+        <h3>All Returns</h3>
+    </div>
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Invoice #</th>
+                    <th>Product</th>
+                    <th>Color / Size</th>
+                    <th>Quantity Returned</th>
+                    <th>Reason</th>
+                    <th>Returned Date</th>
+                    <th>Status</th>
+                    {% if can_cancel_returned_products %}<th>Action</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for ret in returns %}
+                <tr>
+                    <td><strong>{{ ret.sale.invoice_no }}</strong></td>
+                    <td>{{ ret.item.product.name }}</td>
+                    <td>
+                        {% if ret.item.color %}{{ ret.item.color }}{% endif %}
+                        {% if ret.item.size %} / {{ ret.item.size }}{% endif %}
+                        {% if not ret.item.color and not ret.item.size %}No variant{% endif %}
+                    </td>
+                    <td>{{ ret.quantity }}</td>
+                    <td>{{ ret.reason|default:"No reason provided" }}</td>
+                    <td>{{ ret.returned_at|date:"d M Y H:i" }}</td>
+                    <td><span class="badge">{% if ret.is_cancelled %}Cancelled{% else %}Returned{% endif %}</span></td>
+                    {% if can_cancel_returned_products and not ret.is_cancelled %}
+                    <td>
+                        <form method="post" action="{% url 'cancel_return' ret.id %}?next=returns">
+                            {% csrf_token %}
+                            <button type="submit" class="danger-link" onclick="return confirm('Cancel this returned product?');" style="border: 0; background: none; padding: 0; cursor: pointer;">Cancel Return</button>
+                        </form>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% empty %}
+                <tr><td colspan="{% if can_cancel_returned_products %}8{% else %}7{% endif %}" style="text-align: center; padding: 20px; color: var(--muted);">No returns recorded yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

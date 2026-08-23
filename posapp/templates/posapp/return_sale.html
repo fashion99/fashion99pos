@@ -1,0 +1,73 @@
+{% extends 'posapp/base.html' %}
+
+{% block title %}Return Sale - Fashion 99 POS{% endblock %}
+
+{% block content %}
+<div class="hero-card">
+    <h2>Return Sale</h2>
+    <p>Process returns for invoice {{ sale.invoice_no }}</p>
+</div>
+
+<div class="panel-card">
+    <div class="panel-header">
+        <h3>Sale Details</h3>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        <div>
+            <strong>Invoice No:</strong> {{ sale.invoice_no }}
+        </div>
+        <div>
+            <strong>Total Amount:</strong> Rs. {{ sale.total_amount|floatformat:2 }}
+        </div>
+        <div>
+            <strong>Payment Method:</strong> {{ sale.get_payment_method_display }}
+        </div>
+        <div>
+            <strong>Date:</strong> {{ sale.created_at|date:"d M Y H:i" }}
+        </div>
+    </div>
+
+    <form method="post" class="form-grid">
+        {% csrf_token %}
+
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Color / Size</th>
+                        <th>Quantity Sold</th>
+                        <th>Return Quantity</th>
+                        <th>Reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td>{{ item.product.name }}</td>
+                        <td>
+                            {% if item.color %}{{ item.color }}{% endif %}
+                            {% if item.size %} / {{ item.size }}{% endif %}
+                            {% if not item.color and not item.size %}No variant{% endif %}
+                        </td>
+                        <td>{{ item.remaining_quantity }} available to return</td>
+                        <td>
+                            <input type="number" name="quantity_{{ item.id }}" min="0" max="{{ item.remaining_quantity }}" value="0" class="form-control" style="width: 100px;" {% if item.is_fully_returned %}disabled{% endif %}>
+                        </td>
+                        <td>
+                            <input type="text" name="reason_{{ item.id }}" placeholder="e.g. Defective" class="form-control">
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="button-row">
+            <button type="submit" class="primary-btn small-btn">Process Return</button>
+            <a href="{% url 'sales' %}" class="secondary-btn small-btn">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

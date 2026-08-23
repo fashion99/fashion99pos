@@ -1,0 +1,90 @@
+{% extends 'posapp/base.html' %}
+
+{% block title %}Stock - Fashion 99 POS{% endblock %}
+
+{% block content %}
+<div class="hero-card">
+    <h2>Stock Management</h2>
+    <p>Real-time inventory levels across all products and variants.</p>
+</div>
+
+<div class="panel-card">
+    <div class="panel-header">
+        <h3>Current Stock Levels</h3>
+        <form method="get" class="search-form" style="display: flex; gap: 8px; flex: 1; max-width: 300px;">
+            <input type="text" id="stockSearch" name="q" placeholder="Search by code or name..." class="form-control" value="{{ search_query }}" style="flex: 1; font-size: 14px;">
+            <button type="submit" class="primary-btn small-btn" style="padding: 0 16px;">Search</button>
+            {% if search_query %}<a href="{% url 'stock' %}" class="secondary-btn small-btn" style="padding: 0 12px;">Clear</a>{% endif %}
+        </form>
+    </div>
+
+    <div class="table-wrap stock-list-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Product Name</th>
+                    <th class="stock-secondary-column">Category</th>
+                    <th class="stock-secondary-column">Selling Price</th>
+                    <th class="stock-secondary-column">Variants</th>
+                    <th>Total Qty</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr class="stock-row" data-search="{{ product.product_code|lower }} {{ product.name|lower }} {{ product.display_category|lower }}">
+                    <td><strong>{{ product.product_code }}</strong></td>
+                    <td>{{ product.name }}</td>
+                    <td class="stock-secondary-column"><span class="mini-tag">{{ product.display_category }}</span></td>
+                    <td class="stock-secondary-column">Rs. {{ product.selling_price|floatformat:2 }}</td>
+                    <td class="stock-secondary-column">
+                        {% if product.variants.all %}
+                            {% for variant in product.variants.all %}
+                                {{ variant.color|default:"No Color" }} / {{ variant.size|default:"One Size" }} ({{ variant.quantity }}){% if not forloop.last %}<br>{% endif %}
+                            {% endfor %}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td><strong class="stat-value primary">{{ product.total_quantity }}</strong></td>
+                    <td>
+                        <div class="action-cell">
+                            {% if can_add_sales %}<a href="{% url 'create_sale' %}?product_code={{ product.product_code|urlencode }}" class="table-link">Sell</a>{% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" style="text-align: center; padding: 20px; color: var(--muted);">No stock found.</td></tr>
+                {% endfor %}
+                <tr id="stockNoMatches" style="display: none;"><td colspan="7" style="text-align: center; padding: 20px; color: var(--muted);">No matching stock found.</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<script>
+    const stockSearch = document.getElementById('stockSearch');
+    const stockRows = Array.from(document.querySelectorAll('.stock-row'));
+    const stockNoMatches = document.getElementById('stockNoMatches');
+
+    stockSearch?.addEventListener('input', function () {
+        const query = this.value.trim().toLowerCase();
+        let visibleCount = 0;
+        stockRows.forEach(row => {
+            const matches = !query || row.dataset.search.includes(query);
+            row.style.display = matches ? '' : 'none';
+            if (matches) visibleCount += 1;
+        });
+        if (stockNoMatches) {
+            stockNoMatches.style.display = query && visibleCount === 0 ? '' : 'none';
+        }
+    });
+</script>
+
+<div class="stat-grid" style="margin-top: 24px;">
+    <div class="stat-card">
+        <div class="stat-label">Grand Total Quantity</div>
+        <div class="stat-value primary">{{ grand_total_quantity }}</div>
+    </div>
+</div>
+{% endblock %}

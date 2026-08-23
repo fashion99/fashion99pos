@@ -1,0 +1,449 @@
+{% extends 'posapp/base.html' %}
+
+{% block title %}{{ title }} - Fashion 99 POS{% endblock %}
+
+{% block content %}
+<div class="hero-card">
+    <h2>{{ title }}</h2>
+    <p>{% if product %}Update product details{% else %}Add a new product to your inventory{% endif %}</p>
+</div>
+
+<div class="panel-card">
+    <form method="post" class="form-grid" id="productForm">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+            <div style="grid-column: 1 / -1;">
+                {% for error in form.non_field_errors %}
+                    <div class="message-box">{{ error }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% for field in form %}
+            {% if field.field.widget.input_type == 'checkbox' %}
+                {% if field.name == 'has_color' or field.name == 'allow_custom_discount' %}
+                    <!-- Attractive Has Color Toggle Button -->
+                    <div class="field-wrap" style="grid-column: 1 / -1;">
+                        <label class="has-color-toggle">
+                            {{ field }}
+                            <span class="toggle-background">
+                                <span class="toggle-circle"></span>
+                            </span>
+                            <span class="toggle-label">{{ field.label }}</span>
+                        </label>
+                        {% if field.errors %}
+                            <span class="error-text">{{ field.errors.0 }}</span>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="field-wrap">
+                        <label>
+                            {{ field }}
+                            {{ field.label }}
+                        </label>
+                        {% if field.errors %}
+                            <span class="error-text">{{ field.errors.0 }}</span>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="field-wrap">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <span class="error-text">{{ field.errors.0 }}</span>
+                    {% endif %}
+                    {% if field.help_text %}
+                        <small style="color: var(--muted);">{{ field.help_text|safe }}</small>
+                    {% endif %}
+                </div>
+            {% endif %}
+        {% endfor %}
+
+        <!-- Dynamic Color/Size Section -->
+        <div style="grid-column: 1 / -1; margin-top: 20px; padding-top: 20px; border-top: 2px solid var(--border);">
+            <h3 style="margin-top: 0; margin-bottom: 16px;">Stock Management</h3>
+            
+            <div id="colorSection" style="display: none;">
+                <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 16px;">
+                    Add colors and manage quantity for each size separately
+                </p>
+                <div id="colorsList" style="display: grid; gap: 16px; margin-bottom: 16px;"></div>
+                <button type="button" class="primary-btn small-btn" id="addColorBtn" onclick="addColorRow()">+ Add Color</button>
+            </div>
+
+            <div id="noColorSection">
+                <div class="field-wrap">
+                    <label for="productQuantity">Total Quantity</label>
+                    <input type="number" id="productQuantity" name="product_quantity" min="0" placeholder="Enter quantity" class="form-control">
+                </div>
+            </div>
+        </div>
+
+        <div class="button-row">
+            <button type="submit" class="primary-btn small-btn">Save Product</button>
+            <a href="{% url 'products' %}" class="secondary-btn small-btn">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<style>
+    .has-color-toggle {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 20px;
+        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        border: 2px solid var(--primary);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        user-select: none;
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    .has-color-toggle:hover {
+        background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+        box-shadow: 0 4px 12px rgba(29, 78, 216, 0.15);
+        transform: translateY(-2px);
+    }
+
+    .has-color-toggle input[type="checkbox"] {
+        display: none;
+    }
+
+    .toggle-background {
+        position: relative;
+        width: 50px;
+        height: 28px;
+        background: #cbd5e1;
+        border-radius: 14px;
+        transition: background 0.3s ease;
+        display: flex;
+        align-items: center;
+        padding: 2px;
+    }
+
+    .toggle-circle {
+        position: absolute;
+        width: 24px;
+        height: 24px;
+        background: white;
+        border-radius: 50%;
+        left: 2px;
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .has-color-toggle input[type="checkbox"]:checked ~ .toggle-background {
+        background: var(--primary);
+    }
+
+    .has-color-toggle input[type="checkbox"]:checked ~ .toggle-background .toggle-circle {
+        left: 24px;
+    }
+
+    .toggle-label {
+        font-size: 1rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .toggle-label::before {
+        content: '🎨';
+        font-size: 1.2rem;
+    }
+
+    .has-color-toggle input[type="checkbox"]:checked ~ .toggle-label::after {
+        content: ' Active';
+        color: var(--success);
+        font-weight: 700;
+    }
+
+    .color-row {
+        display: grid;
+        gap: 12px;
+        padding: 16px;
+        background: linear-gradient(135deg, #f8fafc 0%, #f0f4f9 100%);
+        border: 2px solid var(--border);
+        border-radius: 10px;
+    }
+
+    .color-row .field-wrap {
+        gap: 4px;
+    }
+
+    .color-row .field-wrap label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    .color-row input {
+        padding: 10px 12px;
+        font-size: 0.9rem;
+    }
+
+    .color-header {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        align-items: end;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .sizes-list {
+        display: grid;
+        gap: 10px;
+        margin: 12px 0;
+        padding: 12px;
+        background: rgba(255,255,255,0.6);
+        border-radius: 8px;
+    }
+
+    .size-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr auto;
+        gap: 10px;
+        align-items: end;
+        padding: 8px;
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+    }
+
+    .size-row .field-wrap {
+        gap: 3px;
+    }
+
+    .size-row .field-wrap label {
+        font-size: 0.8rem;
+        color: var(--muted);
+    }
+
+    .size-row input {
+        padding: 8px 10px;
+        font-size: 0.9rem;
+    }
+
+    .remove-size-btn, .remove-color-btn {
+        background: rgba(239,68,68,0.12);
+        color: var(--danger);
+        border: none;
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.85rem;
+        transition: all 0.2s ease;
+        min-height: 36px;
+    }
+
+    .remove-size-btn:hover, .remove-color-btn:hover {
+        background: rgba(239,68,68,0.2);
+        transform: scale(1.02);
+    }
+
+    .add-size-btn {
+        background: rgba(16,185,129,0.12);
+        color: var(--success);
+        border: none;
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.85rem;
+        transition: all 0.2s ease;
+        width: 100%;
+        min-height: 36px;
+    }
+
+    .add-size-btn:hover {
+        background: rgba(16,185,129,0.2);
+    }
+
+    .remove-color-btn {
+        width: 100%;
+    }
+
+    @media (max-width: 768px) {
+        .has-color-toggle {
+            padding: 14px 16px;
+            gap: 10px;
+        }
+
+        .toggle-label::before {
+            font-size: 1rem;
+        }
+
+        .size-row {
+            grid-template-columns: 1fr;
+        }
+        .remove-size-btn {
+            width: 100%;
+        }
+        .color-header {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<script>
+    function toggleColorSection() {
+        const hasColorCheckbox = document.querySelector('input[name="has_color"]');
+        const colorSection = document.getElementById('colorSection');
+        const noColorSection = document.getElementById('noColorSection');
+        
+        if (hasColorCheckbox.checked) {
+            colorSection.style.display = 'block';
+            noColorSection.style.display = 'none';
+            if (document.getElementById('colorsList').children.length === 0) {
+                addColorRow();
+            }
+        } else {
+            colorSection.style.display = 'none';
+            noColorSection.style.display = 'block';
+        }
+    }
+
+    function addColorRow() {
+        const colorsList = document.getElementById('colorsList');
+        const colorCount = colorsList.children.length;
+        
+        const colorRow = document.createElement('div');
+        colorRow.className = 'color-row';
+        colorRow.id = `colorRow_${colorCount}`;
+        colorRow.innerHTML = `
+            <div class="color-header">
+                <div class="field-wrap">
+                    <label>Color Name</label>
+                    <input type="text" name="color_name" placeholder="e.g., Red, Blue, Black" required>
+                </div>
+                <button type="button" class="remove-color-btn" onclick="removeColorRow(this)">Remove Color</button>
+            </div>
+            
+            <div class="sizes-list" data-color-index="${colorCount}"></div>
+            
+            <button type="button" class="add-size-btn" onclick="addSizeRow(this)">+ Add Size</button>
+        `;
+        
+        colorsList.appendChild(colorRow);
+        
+        // Add first size automatically
+        addSizeRow(colorRow.querySelector('.add-size-btn'));
+    }
+
+    function addSizeRow(button) {
+        const colorRow = button.closest('.color-row');
+        const sizesList = colorRow.querySelector('.sizes-list');
+        const sizeCount = sizesList.children.length;
+        const colorIndex = sizesList.getAttribute('data-color-index');
+        
+        const sizeRow = document.createElement('div');
+        sizeRow.className = 'size-row';
+        sizeRow.innerHTML = `
+            <div class="field-wrap">
+                <label>Size</label>
+                <input type="text" name="size_name_${colorIndex}" placeholder="e.g., S, M, L, XL" required>
+            </div>
+            <div class="field-wrap">
+                <label>Qty</label>
+                <input type="number" name="size_quantity_${colorIndex}" min="0" placeholder="0" required>
+            </div>
+            <button type="button" class="remove-size-btn" onclick="removeSizeRow(this)">Remove</button>
+        `;
+        
+        sizesList.appendChild(sizeRow);
+    }
+
+    function removeSizeRow(button) {
+        button.closest('.size-row').remove();
+    }
+
+    function removeColorRow(button) {
+        button.closest('.color-row').remove();
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const hasColorCheckbox = document.querySelector('input[name="has_color"]');
+        
+        hasColorCheckbox?.addEventListener('change', toggleColorSection);
+        
+        // Set initial state
+        toggleColorSection();
+
+        // Load existing variants if editing
+        {% if product %}
+            const variants = {{ variants_json|safe }};
+            if (variants && variants.length > 0) {
+                const colorsList = document.getElementById('colorsList');
+                colorsList.innerHTML = '';
+                
+                const colorMap = {};
+                variants.forEach(v => {
+                    if (!colorMap[v.color]) {
+                        colorMap[v.color] = [];
+                    }
+                    colorMap[v.color].push({
+                        size: v.size || 'One Size',
+                        quantity: v.quantity
+                    });
+                });
+                
+                let colorIndex = 0;
+                Object.keys(colorMap).forEach(color => {
+                    const colorRow = document.createElement('div');
+                    colorRow.className = 'color-row';
+                    colorRow.id = `colorRow_${colorIndex}`;
+                    colorRow.innerHTML = `
+                        <div class="color-header">
+                            <div class="field-wrap">
+                                <label>Color Name</label>
+                                <input type="text" name="color_name" value="${color}" placeholder="e.g., Red, Blue, Black" required>
+                            </div>
+                            <button type="button" class="remove-color-btn" onclick="removeColorRow(this)">Remove Color</button>
+                        </div>
+                        
+                        <div class="sizes-list" data-color-index="${colorIndex}"></div>
+                        
+                        <button type="button" class="add-size-btn" onclick="addSizeRow(this)">+ Add Size</button>
+                    `;
+                    colorsList.appendChild(colorRow);
+                    
+                    const sizesList = colorRow.querySelector('.sizes-list');
+                    colorMap[color].forEach((item, sizeIndex) => {
+                        const sizeRow = document.createElement('div');
+                        sizeRow.className = 'size-row';
+                        sizeRow.innerHTML = `
+                            <div class="field-wrap">
+                                <label>Size</label>
+                                <input type="text" name="size_name_${colorIndex}" value="${item.size}" placeholder="e.g., S, M, L, XL" required>
+                            </div>
+                            <div class="field-wrap">
+                                <label>Qty</label>
+                                <input type="number" name="size_quantity_${colorIndex}" min="0" value="${item.quantity}" placeholder="0" required>
+                            </div>
+                            <button type="button" class="remove-size-btn" onclick="removeSizeRow(this)">Remove</button>
+                        `;
+                        sizesList.appendChild(sizeRow);
+                    });
+                    
+                    colorIndex++;
+                });
+            }
+        {% else %}
+            // For new products without colors
+            const noColorQty = {{ product.total_quantity|default:0 }};
+            if (noColorQty > 0) {
+                document.getElementById('productQuantity').value = noColorQty;
+            }
+        {% endif %}
+    });
+</script>
+{% endblock %}

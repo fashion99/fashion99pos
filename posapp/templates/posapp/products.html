@@ -1,0 +1,117 @@
+{% extends 'posapp/base.html' %}
+
+{% block title %}Products - Fashion 99 POS{% endblock %}
+
+{% block content %}
+<div class="hero-card">
+    <h2>Product Inventory</h2>
+    <p>Search, filter, and manage all fashion items in your catalog.</p>
+</div>
+
+<div class="panel-card">
+    <div class="panel-header">
+        <h3>All Products</h3>
+        {% if request.user.is_admin or request.user.add_product %}<a href="{% url 'create_product' %}" class="primary-btn small-btn">+ Add Product</a>{% endif %}
+    </div>
+
+    <form method="get" class="product-filter-form">
+        <input type="text" id="productSearch" name="q" placeholder="Search by code or name..." value="{{ request.GET.q }}" style="width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 16px;">
+        <div class="category-filter" style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+            {% for value,label in categories %}
+                <label style="display: flex; align-items: center; gap: 6px; font-weight: 500;">
+                    <input type="checkbox" name="category" value="{{ value }}" {% if value in selected_categories %} checked {% endif %} style="width: 18px; height: 18px; accent-color: var(--primary);">
+                    {{ label }}
+                </label>
+            {% endfor %}
+        </div>
+        <button type="submit" class="primary-btn small-btn">Filter Products</button>
+    </form>
+
+    <div class="table-wrap product-list-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Name</th>
+                    <th>Category</th>
+                    {% if request.user.is_admin or request.user.view_cost_price %}<th>Cost Price</th>{% endif %}
+                    <th>Selling Price</th>
+                    <th>Normal Disc</th>
+                    <th>Special Disc</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr class="product-row" data-search="{{ product.product_code|lower }} {{ product.name|lower }} {{ product.display_category|lower }}">
+                    <td><strong>{{ product.product_code }}</strong></td>
+                    <td>{{ product.name }}</td>
+                    <td><span class="mini-tag">{{ product.display_category }}</span></td>
+                    {% if request.user.is_admin or request.user.view_cost_price %}<td>Rs. {{ product.cost_price|floatformat:2 }}</td>{% endif %}
+                    <td>Rs. {{ product.selling_price|floatformat:2 }}</td>
+                    <td>Rs. {{ product.normal_discount_price|floatformat:2 }}</td>
+                    <td>Rs. {{ product.special_discount_price|floatformat:2 }}</td>
+                    <td>
+                        <div class="action-cell">
+                            {% if can_edit_product %}<a href="{% url 'edit_product' product.id %}" class="table-link">Edit</a>{% endif %}
+                            {% if can_delete_product %}<a href="{% url 'delete_product' product.id %}" class="danger-link" onclick="return confirm('Delete this product?')">Delete</a>{% endif %}
+                        </div>
+                    </td>
+                </tr>
+                <tr class="product-detail-row">
+                    <td colspan="{% if request.user.is_admin or request.user.view_cost_price %}8{% else %}7{% endif %}">
+                        <div class="product-detail-box">
+                            <div class="product-detail-heading">
+                                <strong>{{ product.name }} details</strong>
+                                <span class="mini-tag">{{ product.total_quantity }} units in stock</span>
+                            </div>
+                            <div class="product-detail-grid">
+                                <div><span>Code</span><strong>{{ product.product_code }}</strong></div>
+                                <div><span>Category</span><strong>{{ product.display_category }}</strong></div>
+                                <div><span>Price</span><strong>Rs. {{ product.selling_price|floatformat:2 }}</strong></div>
+                                <div><span>Color</span><strong>{% if product.has_color %}Available{% else %}No color{% endif %}</strong></div>
+                            </div>
+                            <div class="variant-summary">
+                                <span>Variant stock</span>
+                                <div class="variant-list">
+                                    {% for variant in product.variants.all %}
+                                        <span class="variant-chip">{{ variant.color|default:"No color" }} / {{ variant.size|default:"One size" }}: {{ variant.quantity }}</span>
+                                    {% empty %}
+                                        <span class="muted-text">No variant quantities recorded.</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="{% if request.user.is_admin or request.user.view_cost_price %}8{% else %}7{% endif %}" style="text-align: center; padding: 20px; color: var(--muted);">No products found.</td></tr>
+                {% endfor %}
+                <tr id="productNoMatches" style="display: none;"><td colspan="8" style="text-align: center; padding: 20px; color: var(--muted);">No matching products found.</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<script>
+    const productSearch = document.getElementById('productSearch');
+    const productRows = Array.from(document.querySelectorAll('.product-row'));
+    const productNoMatches = document.getElementById('productNoMatches');
+
+    productSearch?.addEventListener('input', function () {
+        const query = this.value.trim().toLowerCase();
+        let visibleCount = 0;
+        productRows.forEach(row => {
+            const matches = !query || row.dataset.search.includes(query);
+            row.style.display = matches ? '' : 'none';
+            const detailRow = row.nextElementSibling;
+            if (detailRow?.classList.contains('product-detail-row')) {
+                detailRow.style.display = matches ? '' : 'none';
+            }
+            if (matches) visibleCount += 1;
+        });
+        if (productNoMatches) {
+            productNoMatches.style.display = query && visibleCount === 0 ? '' : 'none';
+        }
+    });
+</script>
+{% endblock %}

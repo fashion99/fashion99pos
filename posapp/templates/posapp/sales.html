@@ -1,0 +1,112 @@
+{% extends 'posapp/base.html' %}
+
+{% block title %}Sales - Fashion 99 POS{% endblock %}
+
+{% block content %}
+<div class="hero-card">
+    <h2>Sales History</h2>
+    <p>Track all sales transactions and payment records.</p>
+</div>
+
+<div class="panel-card">
+    <div class="panel-header">
+        <h3>Daily Sales</h3>
+        <div class="date-actions" style="display: flex; gap: 12px; align-items: center;">
+            <input type="date" id="dateFilter" class="date-filter" value="{{ selected_date }}" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem;">
+            {% if can_add_sales %}<a href="{% url 'create_sale' %}" class="primary-btn small-btn">+ New Sale</a>{% endif %}
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        <div class="stat-card">
+            <div class="stat-label">Daily Total Sales</div>
+            <p class="stat-value primary">Rs. {{ daily_total|floatformat:2 }}</p>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Cash Sales</div>
+            <p class="stat-value success">Rs. {{ daily_cash|floatformat:2 }}</p>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Online Sales</div>
+            <p class="stat-value warning">Rs. {{ daily_online|floatformat:2 }}</p>
+        </div>
+    </div>
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Invoice #</th>
+                    <th>Product Code</th>
+                    <th>Items</th>
+                    <th>Discount Type</th>
+                    <th>Total Amount</th>
+                    <th>Cash Amount</th>
+                    <th>Online Amount</th>
+                    {% if can_view_profit %}<th>Profit</th>{% endif %}
+                    {% if can_view_profit %}<th>Profit / Unit</th>{% endif %}
+                    <th>Payment</th>
+                    <th>Date & Time</th>
+                    <th>Agent</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in sales %}
+                <tr class="{% if item.is_fully_returned %}returned-sale-row{% endif %}">
+                    <td><strong>{{ item.invoice_no|default:"SL-"|add:item.pk }}</strong></td>
+                    <td>
+                        {% for sale_item in item.items.all %}
+                            <strong>{{ sale_item.product.product_code }}</strong>{% if not forloop.last %}<br>{% endif %}
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {{ item.items.count }}
+                        {% if item.is_fully_returned %}
+                            <span class="badge" style="background: #fee2e2; color: #991b1b;">Returned</span>
+                        {% elif item.has_returns %}
+                            <span class="badge" style="background: #fef3c7; color: #92400e;">Partially returned</span>
+                        {% endif %}
+                    </td>
+                    <td><span class="mini-tag">{{ item.get_discount_type_display }}</span></td>
+                    <td><strong>Rs. {{ item.total_amount|floatformat:2 }}</strong></td>
+                    <td>Rs. {{ item.cash_amount|floatformat:2 }}</td>
+                    <td>Rs. {{ item.online_amount|floatformat:2 }}</td>
+                    {% if can_view_profit %}<td><strong>Rs. {{ item.total_profit|floatformat:2 }}</strong></td>{% endif %}
+                    {% if can_view_profit %}<td>Rs. {{ item.profit_per_unit|floatformat:2 }}</td>{% endif %}
+                    <td>
+                        {% if item.payment_method == 'cash' %}
+                            <span class="badge cash">Cash</span>
+                        {% elif item.payment_method == 'online' %}
+                            <span class="badge online">Online</span>
+                        {% else %}
+                            <span class="badge">{{ item.get_payment_method_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ item.created_at|date:"d M Y H:i" }}</td>
+                    <td>{{ item.agent.get_full_name|default:item.agent }}</td>
+                    <td>
+                        <div class="action-cell">
+                            {% if request.user.role == 'admin' or request.user.edit_sales %}<a href="{% url 'edit_sale' item.id %}" class="table-link">Edit</a>{% endif %}
+                            {% if request.user.role == 'admin' or request.user.delete_sales %}<a href="{% url 'delete_sale' item.id %}" class="danger-link" onclick="return confirm('Delete this sale?');">Delete</a>{% endif %}
+                            {% if request.user.role == 'admin' or request.user.return_sales %}
+                                <a href="{% url 'return_sale' item.id %}" class="table-link" style="color: #f59e0b;">Return</a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="{% if can_view_profit %}13{% else %}11{% endif %}" style="text-align: center; padding: 20px; color: var(--muted);">No sales recorded for this date.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    document.getElementById('dateFilter').addEventListener('change', function() {
+        const date = this.value;
+        window.location.href = `{% url 'sales' %}?date=${date}`;
+    });
+</script>
+{% endblock %}

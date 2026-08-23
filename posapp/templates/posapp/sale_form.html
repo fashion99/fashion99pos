@@ -1,0 +1,344 @@
+{% extends 'posapp/base.html' %}
+
+{% block title %}{{ title }} - Fashion 99 POS{% endblock %}
+
+{% block content %}
+<div class="hero-card">
+    <h2>{{ title }}</h2>
+    <p>Type a product code to load item details and select the exact variant.</p>
+</div>
+
+<div class="panel-card">
+    <form method="post" action="{% if sale %}{% url 'edit_sale' sale.id %}{% else %}{% url 'create_sale' %}{% endif %}" class="form-grid" id="saleForm">
+        {% csrf_token %}
+
+        <datalist id="product-code-options">
+            {% for product in products %}
+                <option value="{{ product.code }}">{{ product.name }}</option>
+            {% endfor %}
+        </datalist>
+
+        <div class="field-wrap">
+            <label for="id_product_code">Product Code</label>
+            {{ form.product_code }}
+            {% if form.product_code.errors %}
+                <span class="error-text">{{ form.product_code.errors.0 }}</span>
+            {% endif %}
+        </div>
+
+        <div class="field-wrap">
+            <label>Selected Product</label>
+            <div id="productDetailBox" class="product-detail-box">
+                <span class="muted-text">No product selected yet.</span>
+            </div>
+        </div>
+
+        <div class="field-wrap" id="variantSelectWrap" style="display:none;">
+            <label for="variantSelect">Choose Variant</label>
+            <select id="variantSelect" class="form-control">
+                <option value="">Select variant</option>
+            </select>
+        </div>
+
+        <div class="field-wrap variant-field" style="display:none;">
+            <label for="id_variant_color">Variant Color</label>
+            {{ form.variant_color }}
+        </div>
+
+        <div class="field-wrap variant-field" style="display:none;">
+            <label for="id_variant_size">Variant Size</label>
+            {{ form.variant_size }}
+        </div>
+
+        <div class="field-wrap quantity-field" style="display:none;">
+            <label for="id_quantity">Quantity</label>
+            {{ form.quantity }}
+        </div>
+
+        <div class="field-wrap payment-field" style="display:none;">
+            <label for="id_discount_type">Discount Type</label>
+            {{ form.discount_type }}
+        </div>
+
+        <div class="field-wrap payment-field" id="customDiscountWrap" style="display:none;">
+            <label for="id_custom_discount_price">Custom Discount Price</label>
+            {{ form.custom_discount_price }}
+            {% if form.custom_discount_price.errors %}
+                <span class="error-text">{{ form.custom_discount_price.errors.0 }}</span>
+            {% endif %}
+        </div>
+
+        <div class="field-wrap payment-field" style="display:none;">
+            <label for="id_payment_method">Payment Method</label>
+            {{ form.payment_method }}
+        </div>
+
+        <div class="field-wrap" id="onlineAmountWrap" style="display:none;">
+            <label for="id_online_amount">Online Amount</label>
+            {{ form.online_amount }}
+        </div>
+
+        <div class="field-wrap" id="cashPreviewWrap" style="display:none;">
+            <label>Payment Amount</label>
+            <div id="cashPreview" class="product-detail-box">Rs. 0.00</div>
+        </div>
+
+        <div class="button-row">
+            <button type="submit" class="primary-btn small-btn">Save Sale</button>
+            <a href="{% url 'sales' %}" class="secondary-btn small-btn">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<style>
+    .product-detail-box {
+        min-height: 54px;
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+        display: flex;
+        align-items: center;
+        font-weight: 600;
+        color: var(--text);
+    }
+
+    .muted-text {
+        color: var(--muted);
+    }
+</style>
+
+<script id="product-catalog" type="application/json">{{ products_json|safe }}</script>
+<script>
+    const productCatalog = JSON.parse(document.getElementById('product-catalog').textContent);
+    const productInput = document.getElementById('id_product_code');
+    const productDetailBox = document.getElementById('productDetailBox');
+    const colorInput = document.getElementById('id_variant_color');
+    const sizeInput = document.getElementById('id_variant_size');
+    const paymentMethod = document.getElementById('id_payment_method');
+    const discountInput = document.getElementById('id_discount_type');
+    const customDiscountWrap = document.getElementById('customDiscountWrap');
+    const customDiscountInput = document.getElementById('id_custom_discount_price');
+    const onlineAmountWrap = document.getElementById('onlineAmountWrap');
+    const onlineInput = document.getElementById('id_online_amount');
+    const cashPreviewWrap = document.getElementById('cashPreviewWrap');
+    const cashPreview = document.getElementById('cashPreview');
+    const qtyInput = document.getElementById('id_quantity');
+    const variantSelect = document.getElementById('variantSelect');
+    const variantSelectWrap = document.getElementById('variantSelectWrap');
+    const variantFields = document.querySelectorAll('.variant-field');
+    const quantityField = document.querySelector('.quantity-field');
+    const paymentFields = document.querySelectorAll('.payment-field');
+
+    function showStep(stepName) {
+        const productFound = !!productCatalog.find(item => item.code === productInput.value.trim());
+        const showVariant = productFound;
+        const showQuantity = productFound && !!(colorInput.value || sizeInput.value || variantSelect.value);
+        const showPayments = productFound && showQuantity;
+
+        variantFields.forEach(el => {
+            el.style.display = showVariant ? 'block' : 'none';
+        });
+        quantityField.style.display = showQuantity ? 'block' : 'none';
+        paymentFields.forEach(el => {
+            el.style.display = showPayments ? 'block' : 'none';
+        });
+        if (!productFound) {
+            cashPreviewWrap.style.display = 'none';
+            onlineAmountWrap.style.display = 'none';
+        }
+    }
+
+    function formatCurrency(value) {
+        return 'Rs. ' + Number(value || 0).toFixed(2);
+    }
+
+    function getDiscountValue(product) {
+        const discountType = discountInput.value;
+        if (!product) return Number(productInput.value ? 0 : 0);
+        if (discountType === 'normal') return Number(product.normal_discount_price || product.price || 0);
+        if (discountType === 'special') return Number(product.special_discount_price || product.normal_discount_price || product.price || 0);
+        if (discountType === 'custom') return Number(customDiscountInput.value || 0);
+        return Number(product.price || 0);
+    }
+
+    function updateCustomDiscountOption(product) {
+        const normalOption = discountInput.querySelector('option[value="normal"]');
+        const specialOption = discountInput.querySelector('option[value="special"]');
+        const customOption = discountInput.querySelector('option[value="custom"]');
+        const normalEnabled = !!(product && Number(product.normal_discount_price || 0) > 0);
+        const specialEnabled = !!(product && Number(product.special_discount_price || 0) > 0);
+        const enabled = !!(product && product.allow_custom_discount);
+
+        if (normalOption) {
+            normalOption.hidden = !normalEnabled;
+            normalOption.disabled = !normalEnabled;
+        }
+        if (specialOption) {
+            specialOption.hidden = !specialEnabled;
+            specialOption.disabled = !specialEnabled;
+        }
+        if (customOption) {
+            customOption.hidden = !enabled;
+            customOption.disabled = !enabled;
+        }
+
+        const selectedOption = discountInput.querySelector(`option[value="${discountInput.value}"]`);
+        if (!selectedOption || selectedOption.disabled) {
+            discountInput.value = 'none';
+        }
+        customDiscountWrap.style.display = enabled && discountInput.value === 'custom' ? 'block' : 'none';
+    }
+
+    function updatePaymentFields() {
+        const payment = paymentMethod.value;
+        const isSplit = payment === 'split';
+        onlineAmountWrap.style.display = isSplit ? 'block' : 'none';
+        cashPreviewWrap.style.display = payment !== 'online' ? 'block' : 'none';
+        if (!isSplit) {
+            onlineInput.value = '';
+        }
+        updateCashPreview();
+    }
+
+    function updateCashPreview() {
+        const selected = productCatalog.find(item => item.code === productInput.value.trim());
+        updateCustomDiscountOption(selected);
+        if (!selected) {
+            cashPreview.textContent = formatCurrency(0);
+            return;
+        }
+
+        const quantity = Number(qtyInput.value || 0);
+        const unitPrice = getDiscountValue(selected);
+        const total = unitPrice * quantity;
+        const payment = paymentMethod.value;
+        let cashValue = total;
+
+        if (payment === 'split') {
+            const onlineValue = Number(onlineInput.value || 0);
+            cashValue = Math.max(total - onlineValue, 0);
+        } else if (payment === 'online') {
+            cashValue = 0;
+        }
+
+        cashPreview.textContent = formatCurrency(cashValue);
+    }
+
+    function populateVariantOptions(product) {
+        variantSelect.innerHTML = '<option value="">Select variant</option>';
+
+        if (!product || !product.variants || !product.variants.length) {
+            variantSelectWrap.style.display = 'none';
+            colorInput.value = '';
+            sizeInput.value = '';
+            return;
+        }
+
+        variantSelectWrap.style.display = 'block';
+        product.variants.forEach((variant) => {
+            const label = `${variant.color || 'No Color'} / ${variant.size || 'One Size'} (${variant.quantity})`;
+            const option = document.createElement('option');
+            option.value = `${variant.color || ''}|${variant.size || ''}`;
+            option.textContent = label;
+            variantSelect.appendChild(option);
+        });
+
+        const first = product.variants[0];
+        colorInput.value = first.color || '';
+        sizeInput.value = first.size || '';
+        variantSelect.value = `${first.color || ''}|${first.size || ''}`;
+        showStep();
+    }
+
+    function populateVariantFields(productCode) {
+        const product = productCatalog.find(item => item.code === productCode);
+        if (!product) {
+            productDetailBox.innerHTML = '<span class="muted-text">Product not found.</span>';
+            colorInput.value = '';
+            sizeInput.value = '';
+            variantSelect.innerHTML = '<option value="">Select variant</option>';
+            variantSelectWrap.style.display = 'none';
+            cashPreview.textContent = formatCurrency(0);
+            showStep();
+            return;
+        }
+
+        const variantList = product.variants || [];
+        const variantText = variantList.length
+            ? variantList.map(v => `${v.color || 'No Color'} / ${v.size || 'One Size'} (${v.quantity})`).join('<br>')
+            : 'No variants; use product quantity only.';
+
+        productDetailBox.innerHTML = `
+            <div>
+                <div><strong>${product.name}</strong></div>
+                <div>${formatCurrency(getDiscountValue(product))}</div>
+                <div style="font-size: 0.8rem; color: var(--muted); margin-top: 4px;">${variantText}</div>
+            </div>
+        `;
+
+        populateVariantOptions(product);
+        updateCashPreview();
+    }
+
+    variantSelect.addEventListener('change', function () {
+        const selectedValue = this.value;
+        if (!selectedValue) {
+            colorInput.value = '';
+            sizeInput.value = '';
+            showStep();
+            return;
+        }
+        const [color, size] = selectedValue.split('|');
+        colorInput.value = color || '';
+        sizeInput.value = size || '';
+        showStep();
+        updateCashPreview();
+    });
+
+    const fetchProductDetails = function () {
+        const code = productInput.value.trim();
+        if (!code) {
+            productDetailBox.innerHTML = '<span class="muted-text">No product selected yet.</span>';
+            colorInput.value = '';
+            sizeInput.value = '';
+            variantSelect.innerHTML = '<option value="">Select variant</option>';
+            variantSelectWrap.style.display = 'none';
+            cashPreview.textContent = formatCurrency(0);
+            showStep();
+            return;
+        }
+        populateVariantFields(code);
+    };
+
+    productInput.addEventListener('input', fetchProductDetails);
+    productInput.addEventListener('change', fetchProductDetails);
+    productInput.addEventListener('blur', fetchProductDetails);
+
+    discountInput.addEventListener('change', function () {
+        const selected = productCatalog.find(item => item.code === productInput.value.trim());
+        updateCustomDiscountOption(selected);
+        if (selected) {
+            productDetailBox.innerHTML = `
+                <div>
+                    <div><strong>${selected.name}</strong></div>
+                    <div>${formatCurrency(getDiscountValue(selected))}</div>
+                    <div style="font-size: 0.8rem; color: var(--muted); margin-top: 4px;">${(selected.variants || []).map(v => `${v.color || 'No Color'} / ${v.size || 'One Size'} (${v.quantity})`).join('<br>')}</div>
+                </div>
+            `;
+        }
+        updateCashPreview();
+    });
+
+    paymentMethod.addEventListener('change', updatePaymentFields);
+    qtyInput.addEventListener('input', updateCashPreview);
+    onlineInput.addEventListener('input', updateCashPreview);
+    customDiscountInput.addEventListener('input', updateCashPreview);
+
+    if (productInput.value) {
+        populateVariantFields(productInput.value.trim());
+    }
+    showStep();
+    updatePaymentFields();
+</script>
+{% endblock %}

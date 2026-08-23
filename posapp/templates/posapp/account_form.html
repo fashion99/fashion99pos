@@ -1,0 +1,94 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="{% static 'posapp/css/style.css' %}">
+</head>
+<body class="dashboard-page">
+    <header class="topbar">
+        <div class="brand-inline">
+            <div class="brand-mark">F</div>
+            <span>Fashion 99 POS</span>
+        </div>
+        <div class="topbar-right">
+            <div class="user-pill">
+                <div class="avatar">{{ request.user.get_full_name|first|default:request.user.username|first|upper }}</div>
+                <span>{{ request.user.get_full_name|default:request.user.username }}</span>
+            </div>
+            <a href="{% url 'logout' %}" class="logout-link">Logout</a>
+        </div>
+    </header>
+
+    <div class="dashboard-shell compact-shell">
+        <aside class="sidebar">
+            <ul class="nav-list">
+                <li><a href="{% url 'accounts' %}">Accounts</a></li>
+            </ul>
+        </aside>
+
+        <main class="main-panel">
+            <section class="panel-card">
+                <div class="panel-header">
+                    <h3>{{ title }}</h3>
+                    <a href="{% url 'accounts' %}" class="small-link">Back to Accounts</a>
+                </div>
+
+                <form method="post" class="form-grid">
+                    {% csrf_token %}
+                    {% for field in form %}
+                        {% if field.field.widget.input_type == 'checkbox' and field.name != 'role' %}
+                            {% if forloop.first %}<div class="permissions-section" style="grid-column: 1 / -1; margin-top: 20px; padding-top: 20px; border-top: 2px solid var(--border);">
+                                <h3 style="margin-top: 0; margin-bottom: 16px;">Portal and Function Permissions</h3>
+                                <div class="permissions-grid">{% endif %}
+                            
+                            <label class="permission-button">
+                                {{ field }}
+                                <span class="permission-label">{{ field.label }}</span>
+                                <span class="permission-checkmark">✓</span>
+                            </label>
+                            
+                            {% if forloop.last %}</div>
+                            </div>{% endif %}
+                        {% else %}
+                            <div class="field-wrap">
+                                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                {% if field.field.widget.input_type == 'checkbox' %}
+                                    <div class="checkbox-wrap">
+                                        {{ field }}
+                                    </div>
+                                {% elif field.name == 'password' %}
+                                    <div style="display: flex; gap: 8px; align-items: center;">
+                                        {{ field }}
+                                        <button type="button" class="secondary-btn small-btn" id="togglePassword" style="white-space: nowrap;">Show</button>
+                                    </div>
+                                {% else %}
+                                    {{ field }}
+                                {% endif %}
+                                {% if field.errors %}
+                                    <div class="error-text">{{ field.errors|join:', ' }}</div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                    <div class="button-row">
+                        <button type="submit" class="primary-btn">Save</button>
+                        <a href="{% url 'accounts' %}" class="secondary-btn">Cancel</a>
+                    </div>
+                </form>
+            </section>
+        </main>
+    </div>
+</body>
+<script>
+    const passwordInput = document.getElementById('id_password');
+    const togglePassword = document.getElementById('togglePassword');
+    togglePassword?.addEventListener('click', function () {
+        const isHidden = passwordInput.type === 'password';
+        passwordInput.type = isHidden ? 'text' : 'password';
+        this.textContent = isHidden ? 'Hide' : 'Show';
+    });
+</script>
+</html>

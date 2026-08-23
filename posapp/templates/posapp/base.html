@@ -1,0 +1,162 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Fashion 99 POS{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'posapp/css/style.css' %}">
+</head>
+<body class="dashboard-page">
+    <header class="topbar">
+        <div class="topbar-left">
+            <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="brand-inline">
+                <div class="brand-mark">F</div>
+                <span>Fashion 99 POS</span>
+            </div>
+        </div>
+
+        <div class="topbar-right">
+            <div class="user-pill">
+                <div class="avatar">{{ request.user.get_full_name|first|default:request.user.username|first|upper }}</div>
+                <span>{{ request.user.get_full_name|default:request.user.username }}</span>
+            </div>
+            <a href="{% url 'logout' %}" class="logout-link">Logout</a>
+        </div>
+    </header>
+
+    <div class="dashboard-shell">
+        <aside class="sidebar" id="sidebar">
+            {% with request.resolver_match.url_name as active_page %}
+            <div class="sidebar-header">
+                <h3>Navigation</h3>
+                <button class="close-menu" id="closeMenu" aria-label="Close menu">✕</button>
+            </div>
+            <ul class="nav-list">
+                {% if request.user.is_admin or request.user.view_dashboard %}<li><a href="{% url 'dashboard' %}" class="nav-link {% if active_page == 'dashboard' %}active{% endif %}"><span class="icon">📊</span> <span class="label">Dashboard</span></a></li>{% endif %}
+                {% if request.user.is_admin or request.user.view_products or request.user.add_product or request.user.edit_product or request.user.delete_product %}
+                    <li><a href="{% url 'products' %}" class="nav-link {% if active_page == 'products' or active_page == 'create_product' or active_page == 'edit_product' %}active{% endif %}"><span class="icon">📦</span> <span class="label">Products</span></a></li>
+                {% endif %}
+                {% if request.user.is_admin or request.user.view_stock %}
+                    <li><a href="{% url 'stock' %}" class="nav-link {% if active_page == 'stock' %}active{% endif %}"><span class="icon">📈</span> <span class="label">Stock</span></a></li>
+                {% endif %}
+                {% if request.user.is_admin or request.user.view_own_sales_history or request.user.view_all_sales_history or request.user.add_sales or request.user.edit_sales or request.user.delete_sales or request.user.return_sales %}
+                    <li><a href="{% url 'sales' %}" class="nav-link {% if active_page == 'sales' or active_page == 'edit_sale' %}active{% endif %}"><span class="icon">💰</span> <span class="label">Sales</span></a></li>
+                {% endif %}
+                {% if request.user.is_admin or request.user.view_own_expense_history or request.user.view_all_expense_history or request.user.add_expense or request.user.edit_expense or request.user.delete_expense %}
+                    <li><a href="{% url 'expenses' %}" class="nav-link {% if active_page == 'expenses' or active_page == 'edit_expense' %}active{% endif %}"><span class="icon">💳</span> <span class="label">Expenses</span></a></li>
+                {% endif %}
+                {% if request.user.is_admin or request.user.view_reports %}
+                    <li><a href="{% url 'reports' %}" class="nav-link {% if active_page == 'reports' %}active{% endif %}"><span class="icon">📋</span> <span class="label">Reports</span></a></li>
+                {% endif %}
+                {% if request.user.is_admin or request.user.view_return_notifications %}
+                    <li><a href="{% url 'sale_returns' %}" class="nav-link {% if active_page == 'sale_returns' %}active{% endif %}"><span class="icon">↩</span> <span class="label">Return Log</span></a></li>
+                {% endif %}
+                {% if request.user.is_admin %}
+                    <li><a href="{% url 'accounts' %}" class="nav-link {% if active_page == 'accounts' or active_page == 'create_account' or active_page == 'edit_account' %}active{% endif %}"><span class="icon">👥</span> <span class="label">Accounts</span></a></li>
+                {% endif %}
+            </ul>
+            {% endwith %}
+        </aside>
+
+        <main class="main-panel">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="message-box {{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script>
+        const navigationEntry = performance.getEntriesByType('navigation')[0];
+        if (navigationEntry?.type === 'reload') {
+            window.location.replace('{% url 'logout' %}');
+        }
+
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const closeMenu = document.getElementById('closeMenu');
+        const dashboardShell = document.querySelector('.dashboard-shell');
+
+        function closeMenuHandler() {
+            sidebar?.classList.remove('open');
+            document.body.classList.remove('menu-open');
+        }
+
+        menuToggle?.addEventListener('click', function() {
+            sidebar?.classList.toggle('open');
+            document.body.classList.toggle('menu-open');
+        });
+
+        closeMenu?.addEventListener('click', function() {
+            closeMenuHandler();
+        });
+
+        // Close menu when clicking on a nav link
+        sidebar?.addEventListener('click', function(e) {
+            if (e.target.classList.contains('nav-link')) {
+                setTimeout(() => {
+                    closeMenuHandler();
+                }, 150);
+            }
+        });
+
+        // Close menu when clicking on backdrop overlay (only on mobile)
+        dashboardShell?.addEventListener('click', function(e) {
+            if (window.innerWidth <= 768 && document.body.classList.contains('menu-open') && e.target === dashboardShell) {
+                closeMenuHandler();
+            }
+        });
+
+        // Close menu on scroll
+        let scrollTimeout;
+        document.addEventListener('scroll', function() {
+            if (window.innerWidth <= 768 && document.body.classList.contains('menu-open')) {
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(() => {
+                    closeMenuHandler();
+                }, 300);
+            }
+        }, { passive: true });
+
+        // Close menu when window is resized to desktop size
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                closeMenuHandler();
+            }
+        });
+
+        // Close menu after 5 seconds if user doesn't interact
+        let autoHideTimeout;
+        function resetAutoHide() {
+            clearTimeout(autoHideTimeout);
+            autoHideTimeout = setTimeout(() => {
+                if (window.innerWidth <= 768) {
+                    closeMenuHandler();
+                }
+            }, 5000);
+        }
+
+        menuToggle?.addEventListener('click', resetAutoHide);
+        sidebar?.addEventListener('click', function(e) {
+            if (e.target.classList.contains('nav-link')) {
+                clearTimeout(autoHideTimeout);
+            }
+        });
+
+        // Keyboard close (ESC key)
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && document.body.classList.contains('menu-open')) {
+                closeMenuHandler();
+            }
+        });
+    </script>
+</body>
+</html>

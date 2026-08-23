@@ -1,0 +1,43 @@
+{% extends 'posapp/base.html' %}
+
+{% block title %}Fashion 99 Dashboard{% endblock %}
+
+{% block content %}
+<section class="hero-card">
+    <h2>Good morning, {{ request.user.get_full_name|default:request.user.username }}</h2>
+    <p>Here is your internal operation overview for today.</p>
+</section>
+
+<section class="stat-grid">
+    <article class="stat-card" style="grid-column: 1 / -1; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); border: none;">
+        <div class="stat-label" style="color: #fff; font-size: 0.95rem;">Amount to Deposit</div>
+        <p class="stat-value" style="color: #fff; font-size: 2.5rem;">Rs. {{ deposit_amount|floatformat:2 }}</p>
+        <small style="color: rgba(255,255,255,0.8); margin-top: 8px; display: block;">Cash sales minus total expenses</small>
+    </article>
+</section>
+
+<section class="stat-grid">
+    <article class="stat-card">
+        <div class="stat-label">Total Sales</div>
+        <p class="stat-value primary">Rs. {{ total_sales|floatformat:2 }}</p>
+    </article>
+    <article class="stat-card">
+        <div class="stat-label">Total Cash</div>
+        <p class="stat-value success">Rs. {{ cash_sales|floatformat:2 }}</p>
+    </article>
+    <article class="stat-card">
+        <div class="stat-label">Total Online Payment</div>
+        <p class="stat-value warning">Rs. {{ online_sales|floatformat:2 }}</p>
+    </article>
+    <article class="stat-card">
+        <div class="stat-label">Total Expense</div>
+        <p class="stat-value danger">Rs. {{ total_expenses|floatformat:2 }}</p>
+    </article>
+    {% if can_view_profit %}
+    <article class="stat-card">
+        <div class="stat-label">Total Profit</div>
+        <p class="stat-value success">Rs. {{ total_profit|floatformat:2 }}</p>
+    </article>
+    {% endif %}
+</section>
+{% endblock %}

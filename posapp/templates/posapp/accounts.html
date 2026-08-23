@@ -1,0 +1,57 @@
+{% extends 'posapp/base.html' %}
+
+{% block title %}Accounts{% endblock %}
+
+{% block content %}
+<section class="panel-card">
+    <div class="panel-header">
+        <h3>Accounts & Permissions</h3>
+        {% if request.user.role == 'admin' %}
+            <a href="{% url 'create_account' %}" class="primary-btn small-btn">Add Account</a>
+        {% endif %}
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            {% if 'success' not in message.tags %}
+                <div class="message-box">{{ message }}</div>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Role</th>
+                    <th>Email</th>
+                    <th>Employee ID</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.get_full_name|default:user.username }}</td>
+                    <td>{{ user.role|title }}</td>
+                    <td>{{ user.email|default:'-' }}</td>
+                    <td>{{ user.employee_id|default:'-' }}</td>
+                    <td class="action-cell">
+                        <a href="{% url 'edit_account' user.id %}" class="table-link">Settings</a>
+                        {% if request.user.role == 'admin' %}
+                            <a href="{% url 'reset_account_password' user.id %}" class="table-link">Password Reset</a>
+                        {% endif %}
+                        {% if request.user.role == 'admin' and user.id != request.user.id %}
+                            <a href="{% url 'delete_account' user.id %}" class="table-link danger-link" onclick="return confirm('Delete this account?')">Delete</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5">No accounts found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

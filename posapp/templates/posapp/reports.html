@@ -1,0 +1,88 @@
+{% extends 'posapp/base.html' %}
+
+{% block title %}Reports - Fashion 99 POS{% endblock %}
+
+{% block content %}
+<div class="panel-card" style="margin-top: 24px;">
+    <div class="panel-header">
+        <h3>Summary</h3>
+    </div>
+    <div class="stat-grid">
+        <div class="stat-card">
+            <div class="stat-label">Sales</div>
+            <div class="stat-value primary">Rs. {{ total_sales|floatformat:2 }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Expenses</div>
+            <div class="stat-value danger">Rs. {{ total_expenses|floatformat:2 }}</div>
+        </div>
+        {% if can_view_profit %}<div class="stat-card">
+            <div class="stat-label">Profit</div>
+            <div class="stat-value success">Rs. {{ total_profit|floatformat:2 }}</div>
+        </div>{% endif %}
+    </div>
+</div>
+
+<div class="panel-card" style="margin-top: 24px;">
+    <div class="panel-header">
+        <div>
+            <h3>Daily Ledger</h3>
+            <p style="margin: 4px 0 0; color: var(--muted);">One row per day for {{ start_date }} to {{ end_date }}</p>
+        </div>
+    </div>
+
+    <form method="get" class="form-grid" style="margin-bottom: 20px;">
+        <input type="hidden" name="report_type" value="{{ report_type }}">
+        <div class="field-wrap">
+            <label for="ledgerStartDate">From Date</label>
+            <input type="date" name="start_date" id="ledgerStartDate" value="{{ start_date }}" class="form-control">
+        </div>
+        <div class="field-wrap">
+            <label for="ledgerEndDate">To Date</label>
+            <input type="date" name="end_date" id="ledgerEndDate" value="{{ end_date }}" class="form-control">
+        </div>
+        <div class="button-row">
+            <button type="submit" class="primary-btn small-btn">Update Ledger</button>
+            <button type="submit" name="export" value="csv" class="secondary-btn small-btn">Export CSV</button>
+        </div>
+    </form>
+
+    <div class="table-wrap" style="overflow-x: auto;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Total Sales</th>
+                    <th>Total Cash</th>
+                    <th>Total Online</th>
+                    <th>Total Expense</th>
+                    <th>Amount to Deposit</th>
+                    {% if can_view_profit %}<th>Profit</th>{% endif %}
+                    <th>Sold Qty</th>
+                    <th>Returned Qty</th>
+                    <th>Net Qty</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in ledger %}
+                <tr>
+                    <td><strong>{{ row.date|date:"d M Y" }}</strong></td>
+                    <td>Rs. {{ row.total_sales|floatformat:2 }}</td>
+                    <td>Rs. {{ row.total_cash|floatformat:2 }}</td>
+                    <td>Rs. {{ row.total_online|floatformat:2 }}</td>
+                    <td>Rs. {{ row.total_expense|floatformat:2 }}</td>
+                    <td><strong>Rs. {{ row.deposit|floatformat:2 }}</strong></td>
+                    {% if can_view_profit %}<td>Rs. {{ row.profit|floatformat:2 }}</td>{% endif %}
+                    <td>{{ row.sold_quantity }}</td>
+                    <td>{{ row.returned_quantity }}</td>
+                    <td>{{ row.net_quantity }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="10" style="text-align: center; padding: 20px; color: var(--muted);">No ledger data for this period.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

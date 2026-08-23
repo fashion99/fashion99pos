@@ -1,0 +1,44 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fashion 99 POS Login</title>
+    <link rel="stylesheet" href="{% static 'posapp/css/style.css' %}">
+</head>
+<body>
+    <div class="login-shell">
+        <div class="login-card">
+            <section class="login-form-panel">
+                <div class="panel-top">
+                    <span class="panel-tag">POS Access</span>
+                </div>
+                <h2>Welcome back</h2>
+                <p class="subtitle">Sign in with your staff credentials to continue.</p>
+
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="message-box">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="post" class="login-form">
+                    {% csrf_token %}
+                    <div class="form-field">
+                        <label for="username">Username</label>
+                        <input id="username" type="text" name="username" required placeholder="Enter your username">
+                    </div>
+                    <div class="form-field">
+                        <label for="password">Password</label>
+                        <input id="password" type="password" name="password" required placeholder="Enter your password">
+                    </div>
+                    <button type="submit" class="primary-btn">Login</button>
+                </form>
+
+                <div class="login-footer">Fashion 99 • Internal Shop System</div>
+            </section>
+        </div>
+    </div>
+</body>
+</html>

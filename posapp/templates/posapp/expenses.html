@@ -1,0 +1,71 @@
+{% extends 'posapp/base.html' %}
+
+{% block title %}Expenses - Fashion 99 POS{% endblock %}
+
+{% block content %}
+<div class="hero-card">
+    <h2>Expense Tracking</h2>
+    <p>Monitor all business expenses and cost breakdowns.</p>
+</div>
+
+<div class="panel-card">
+    <div class="panel-header">
+        <h3>Daily Expense History</h3>
+        <div class="date-actions" style="display: flex; gap: 12px; align-items: center;">
+            <input type="date" id="dateFilter" class="date-filter" value="{{ selected_date }}" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem;">
+            {% if can_add_expense %}<a href="{% url 'create_expense' %}" class="primary-btn small-btn">+ Add Expense</a>{% endif %}
+        </div>
+    </div>
+
+    <div style="margin-bottom: 24px;">
+        <div class="stat-card">
+            <div class="stat-label">Daily Total Expense</div>
+            <p class="stat-value danger">Rs. {{ daily_total|floatformat:2 }}</p>
+        </div>
+    </div>
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Amount</th>
+                    <th>Purpose</th>
+                    <th>Agent</th>
+                    <th>Date & Time</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in expenses %}
+                <tr>
+                    <td><strong class="stat-value danger">Rs. {{ item.amount|floatformat:2 }}</strong></td>
+                    <td>{{ item.purpose }}</td>
+                    <td>{{ item.agent.get_full_name|default:item.agent }}</td>
+                    <td>{{ item.created_at|date:"d M Y H:i" }}</td>
+                    <td>
+                        <div class="action-cell">
+                            {% if request.user.role == 'admin' or request.user.edit_expense %}<a href="{% url 'edit_expense' item.id %}" class="table-link">Edit</a>{% endif %}
+                            {% if request.user.role == 'admin' or request.user.delete_expense %}
+                                <form method="post" action="{% url 'delete_expense' item.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="danger-link" onclick="return confirm('Delete this expense?');" style="border: 0; background: none; padding: 0; cursor: pointer;">Delete</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" style="text-align: center; padding: 20px; color: var(--muted);">No expenses recorded for this date.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    document.getElementById('dateFilter').addEventListener('change', function() {
+        const date = this.value;
+        window.location.href = `{% url 'expenses' %}?date=${date}`;
+    });
+</script>
+{% endblock %}

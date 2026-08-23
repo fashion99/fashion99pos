@@ -1,0 +1,31 @@
+{% extends 'posapp/base.html' %}
+
+{% block title %}{{ title }} - Fashion 99 POS{% endblock %}
+
+{% block content %}
+<div class="hero-card">
+    <h2>{{ title }}</h2>
+    <p>Record a business expense with a purpose.</p>
+</div>
+
+<div class="panel-card">
+    <form method="post" action="{% if form.instance.pk %}{% url 'edit_expense' form.instance.pk %}{% else %}{% url 'create_expense' %}{% endif %}" class="form-grid">
+        {% csrf_token %}
+
+        {% for field in form %}
+            <div class="field-wrap">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                    <span class="error-text">{{ field.errors.0 }}</span>
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        <div class="button-row">
+            <button type="submit" class="primary-btn small-btn">Save Expense</button>
+            <a href="{% url 'expenses' %}" class="secondary-btn small-btn">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
