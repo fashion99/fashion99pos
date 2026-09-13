@@ -4,8 +4,8 @@
 
 {% block content %}
 <section class="hero-card">
-    <h2>Good morning, {{ request.user.get_full_name|default:request.user.username }}</h2>
-    <p>Here is your internal operation overview for today.</p>
+    <h2>Welcome, {{ request.user.get_full_name|default:request.user.username }}</h2>
+
 </section>
 
 <section class="stat-grid">
