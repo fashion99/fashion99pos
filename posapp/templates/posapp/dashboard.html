@@ -5,8 +5,42 @@
 {% block content %}
 <section class="hero-card">
     <h2>Welcome, {{ request.user.get_full_name|default:request.user.username }}</h2>
-     <p><a href="https://docs.google.com/forms/d/e/1FAIpQLSd7jQmNwNupp9mzUkSnqQMrwr1bzZsQ1rda3Am78-VlLPcEsg/viewform?pli=1">Form</a></p>
+
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLSd7jQmNwNupp9mzUkSnqQMrwr1bzZsQ1rda3Am78-VlLPcEsg/viewform?pli=1"
+       target="_blank"
+       rel="noopener noreferrer"
+       style="
+           display: flex;
+           align-items: center;
+           justify-content: space-between;
+           width: 100%;
+           max-width: 400px;
+           box-sizing: border-box;
+           margin: 20px auto 5px;
+           padding: 16px 20px;
+           background: linear-gradient(135deg, #2563eb, #1d4ed8);
+           color: #ffffff;
+           text-decoration: none;
+           border-radius: 12px;
+           box-shadow: 0 5px 15px rgba(37, 99, 235, 0.25);
+           font-size: 17px;
+           font-weight: 600;
+           transition: transform 0.2s ease, box-shadow 0.2s ease;
+       "
+       onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(37, 99, 235, 0.35)'"
+       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 5px 15px rgba(37, 99, 235, 0.25)'">
+
+        <span style="flex: 1; text-align: center;">
+            📋 Open Form
+        </span>
+
+        <span style="font-size: 22px; margin-left: 10px;">
+            →
+        </span>
+
+    </a>
 </section>
+
 
 <section class="stat-grid">
     <article class="stat-card" style="grid-column: 1 / -1; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); border: none;">
