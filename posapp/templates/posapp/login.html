@@ -5,53 +5,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fashion 99 POS Login</title>
-
     <link rel="stylesheet" href="{% static 'posapp/css/style.css' %}">
-
-    <style>
-        .button-row {
-            display: flex;
-            gap: 12px;
-            width: 100%;
-            margin-top: 10px;
-        }
-
-        .button-row .primary-btn {
-            flex: 1;
-            width: 50%;
-            box-sizing: border-box;
-        }
-
-        .pos-link {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-        }
-    </style>
 </head>
-
 <body>
     <div class="login-shell">
         <div class="login-card">
-
             <section class="login-form-panel">
-
                 <div class="panel-top">
                     <span class="panel-tag">POS Access</span>
                 </div>
-
                 <h2>Welcome back</h2>
-
-                <p class="subtitle">
-                    Sign in with your staff credentials to continue.
-                </p>
+                <p class="subtitle">Sign in with your staff credentials to continue.</p>
 
                 {% if messages %}
                     {% for message in messages %}
-                        <div class="message-box">
-                            {{ message }}
-                        </div>
+                        <div class="message-box">{{ message }}</div>
                     {% endfor %}
                 {% endif %}
 
@@ -60,52 +28,24 @@
 
                     <div class="form-field">
                         <label for="username">Username</label>
-                        <input
-                            id="username"
-                            type="text"
-                            name="username"
-                            required
-                            placeholder="Enter your username"
-                        >
+                        <input id="username" type="text" name="username" required placeholder="Enter your username">
                     </div>
 
                     <div class="form-field">
                         <label for="password">Password</label>
-                        <input
-                            id="password"
-                            type="password"
-                            name="password"
-                            required
-                            placeholder="Enter your password"
-                        >
+                        <input id="password" type="password" name="password" required placeholder="Enter your password">
                     </div>
 
-                    <div class="button-row">
+                    <button type="submit" class="primary-btn">Login</button>
 
-                        <button type="submit" class="primary-btn">
-                            Login
-                        </button>
-
-                        <a
-                            class="primary-btn pos-link"
-                            href="https://fashion99.vercel.app/"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            POS
-                        </a>
-
-                    </div>
+                    <a class="pos-link" href="https://fashion99.vercel.app/" target="_blank" rel="noopener noreferrer">POS</a>
 
                 </form>
 
-                <div class="login-footer">
-                    Fashion 99 • Internal Shop System
-                </div>
-
+                <div class="login-footer">Fashion 99 • Internal Shop System</div>
             </section>
-
         </div>
     </div>
 </body>
 </html>
+
